@@ -62,7 +62,7 @@ Availability
 ============
 
 These routines and their possible future updates are available at:
-    http://www.mpa-garching.mpg.de/cfe
+    https://github.com/mustang-project/CFE
 
 
 Contact
@@ -71,7 +71,7 @@ Contact
 The routines have been thoroughly tested, but the possibility of bugs always
 exists. If you have a question, comment, or suggestion, please feel free to
 contact me at:
-    kruijssen[[at]]mpa-garching.mpg.de
+    kruijssen[[at]]uni-heidelberg.de
 
 
 Diederik Kruijssen
