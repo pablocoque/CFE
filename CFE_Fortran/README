@@ -6,8 +6,8 @@ IDL AND FORTRAN ROUTINES FOR CALCULATING THE CLUSTER FORMATION EFFICIENCY
 Contents
 ========
 
-CFE_Fortran.tar.gz: 
-    The archive contains six files.
+CFE_Fortran: 
+    The folder contains six files.
     - f_cfe.f90: module containing functions for calculating the CFE as a
       function of galaxy-scale observables.
     - f_cfelocal.f90: module containing functions for calculating the CFE 
@@ -21,8 +21,8 @@ CFE_Fortran.tar.gz:
     See the header of either f_cfe.f90 or f_cfelocal.f90 for a more detailed 
     explanation.
 
-CFE_IDL.tar.gz: 
-    The archive contains three files.
+CFE_IDL: 
+    The folder contains three files.
     - f_cfe.pro: contains functions for calculating the CFE as a function of
       galaxy-scale observables.
     - f_cfelocal.pro: contains functions for calculating the CFE as a function
@@ -76,4 +76,4 @@ contact me at:
 
 Diederik Kruijssen
 Garching, August 2012
-
+(last updated September 2021)
