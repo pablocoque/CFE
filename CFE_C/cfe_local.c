@@ -26,7 +26,7 @@ double f_sfrff(double qvir, double mach, double beta0, double ecore, double sfla
   xcrit = f_xcrit(qvir, mach);
   sigrho = f_sigrho(mach, beta0);
   if (sflaw == 1) {
-    f 0 .5 * ecore/phit * (1. + erf((-2.* log(xcrit) + pow(sigrho, 2.)/(pow(2., 1.5) * sigrho)))); /* specific star formation rate per free-fall time*/
+    f = .5 * ecore/phit * (1. + erf((-2.* log(xcrit) + pow(sigrho, 2.)/(pow(2., 1.5) * sigrho)))); /* specific star formation rate per free-fall time*/
   } else {
     f = 0.012;
   }
@@ -42,7 +42,7 @@ double f_surfg(double rhog, double sigmaloc){
   double G = 6.67e-11;
   double pi = 3.14159265358979323846;
   double phiP = 3.;
-  return sqrt(2.*rholoc*pow(sigmaloc, 2.)/(pi*G*phiP)); /* gas surface density */
+  return sqrt(2.*rhog*pow(sigmaloc, 2.)/(pi*G*phiP)); /* gas surface density */
 }
 
 double f_fstar(double rholoc, double sigmaloc, double csloc, double x, double ecore, double beta0, double qvir, double tsn, double tview, double surfGMC, int sflaw, int radfb){
@@ -78,15 +78,18 @@ double f_fstar(double rholoc, double sigmaloc, double csloc, double x, double ec
   } else {
     efbrad = 1. ;
   }
-  epsarr = {ecore, efb, efbrad, einc}; /* SFEs for maximum, SNfeedback, radiative feedback, incomplete */
-  fstar = min(epsarr);
+  epsarr[0] = ecore;
+  epsarr[1] = efb;
+  epsarr[2] = efbrad;
+  epsarr[3] = einc; /* SFEs for maximum, SNfeedback, radiative feedback, incomplete */
+  fstar = fmin(epsarr[0], fmin(epsarr[1], fmin(epsarr[2], epsarr[3]))); /* local SFE */
   return fstar;
 }
 
-double f_integrate(double xsurv, double mulnx, double sig, double rholoc, double sigmaloc, double csloc, double ecore, double beta0, double qvir, double tsn, double, tview, double surfGMC, int cce, int sflaw, int radfb){
-  double xmin1, xmax, f1, dx, xg, fstar, bound, integral, dpdx, f2, frac;
+double f_integrate(double xsurv, double mulnx, double sig, double rholoc, double sigmaloc, double csloc, double ecore, double beta0, double qvir, double tsn, double tview, double surfGMC, int cce, int sflaw, int radfb){
+  double xmin1, xmin2, xmax, f1, dx, xg, fstar, bound, integral, dpdx, f2, frac;
   double xarr[1000];
-
+  double nx = 1000;
   xmin1 = exp(mulnx - 5.*sig);
   xmax  = exp(mulnx + 10.*sig);
   if (cce > 0 && xsurv < xmin1){
@@ -147,7 +150,7 @@ double f_integrate(double xsurv, double mulnx, double sig, double rholoc, double
 }
 
 double f_phit(double qvir, double x){
-  return 3.1*sqrti((qvir/1.3)*(x/1.e4)) /*ratio of encounter timescale to energy dissipation timescale*/
+  return 3.1*sqrti((qvir/1.3)*(x/1.e4)); /*ratio of encounter timescale to energy dissipation timescale*/
 }
 
 double f_phiad(double qvir, double x){
@@ -158,7 +161,7 @@ double f_phiad(double qvir, double x){
 
 double f_xcce(double sigmaloc, double surfGMC, double qvir, double tview){
   double xfit, xfit0, phiad, diff, diffx;
-  double xarr[101], xarr[101];
+  double xarr1[101], xarr2[101];
   double pi=3.14159265358979323846; /*!pi */
   double eta=2.*1.305*3.*pi/64.; /*!for Plummer */
   double G=6.67e-11; /*!gravitational constant */
@@ -172,6 +175,7 @@ double f_xcce(double sigmaloc, double surfGMC, double qvir, double tview){
   int itermax = 20;
   int niter = 0;
   int ixfit;
+  double nx = 1000;
 
   xfit = pow(xmin, 2.)/xmax;
   xfit0 = xfit*accuracy;
@@ -179,21 +183,21 @@ double f_xcce(double sigmaloc, double surfGMC, double qvir, double tview){
   while(abs(log10(xfit/xfit0)) > accuracy && niter < itermax){
     xfit0 = xfit;
     for (int ix = 1; 101; ix++){
-      xarr[ix-1] = pow(10.,((ix-1)/(nx-1.)*log10(xmax/xmin)+log10(xmin))); /*!x array*/
-      phiad = f_phiad(qvir,xarr[ix-1]); /*!adiabatic correction, see above*/
+      xarr1[ix-1] = pow(10.,((ix-1)/(nx-1.)*log10(xmax/xmin)+log10(xmin))); /*!x array*/
+      phiad = f_phiad(qvir,xarr1[ix-1]); /*!adiabatic correction, see above*/
       xarr2[ix-1] = 87.5*sqrt(pi)*f*g_close*G*phish*surfGMC*phiad*tview/sigmaloc; /*!right-hand side of equation*/
     }
     diff = 1e30;
     for (int ix = 0; 100; ix++){
-      diffx = abs(xarr[ix] - xarr2[ix]);
+      diffx = abs(xarr1[ix] - xarr2[ix]);
       if(diffx < diff && ix > 0){
         diff=diffx;
         ixfit = ix; /*index where x equals right-hand side of equation*/
       }
     }
-    xfit = xarr[ixfit]; /* solution for x_cce */
-    xmin = xarr[ixfit - 1]; /* new minimum*/
-    xmax = xarr[ixfit + 1]; /* new maximum*/
+    xfit = xarr1[ixfit]; /* solution for x_cce */
+    xmin = xarr1[ixfit - 1]; /* new minimum*/
+    xmax = xarr1[ixfit + 1]; /* new maximum*/
     niter++;
   }
   
@@ -221,7 +225,7 @@ double cfe_local_mode(double rholoc, double sigmaloc, double csloc)
   double surfGMC = 100;/*!giant molecular cloud surface density*/
   double ecore = 0.5; /*!maximum (protostellar core) star formation efficiency*/
   double beta0 = 1e10;/*!if turbulent-to-magnetic pressure ratio is not specified, set to turbulent-only*/
-  int radfb = 0/*!SN/radiative feedback mode - NOTE: set to 0 for supernovae only, to 1 for radiative only, and to 2 for both*/
+  int radfb = 0; /*!SN/radiative feedback mode - NOTE: set to 0 for supernovae only, to 1 for radiative only, and to 2 for both*/
 
   tsn = tsn*Myr;
   tview = tview*Myr;
@@ -236,14 +240,17 @@ double cfe_local_mode(double rholoc, double sigmaloc, double csloc)
   sigrho = f_sigrho(mach,beta0); /*!dispersion of overdensity PDF*/
   mulnx = -.5*pow(sigrho,2.); /*!logarithmic mean of overdensity PDF*/
   /*!CALCULATE F_BOUND*/
-  xsurv0 = 0.;
-  fbound = f_integrate(xsurv0,mulnx,sigrho,rholoc,sigmaloc,csloc,ecore,beta0,qvir,tsn,tview,surfGMC,0,sflaw,radfb); /*!naturally bound part of star formation*/
+  xsurv = 0.;
+  fbound = f_integrate(xsurv,mulnx,sigrho,rholoc,sigmaloc,csloc,ecore,beta0,qvir,tsn,tview,surfGMC,0,sflaw,radfb); /*!naturally bound part of star formation*/
   /*!CALCULATE F_CCE*/
   xsurv = f_xcce(sigmaloc,surfGMC,qvir,tview);/*!critical overdensity to remain bound despite the cruel cradle effect*/ 
   fcce = f_integrate(xsurv,mulnx,sigrho,rholoc,sigmaloc,csloc,ecore,beta0,qvir,tsn,tview,surfGMC,1,sflaw,radfb); /*!part of bound SF surviving the cruel cradle effect*/ 
   fcce2 = f_integrate(xsurv,mulnx,sigrho,rholoc,sigmaloc,csloc,ecore,beta0,qvir,tsn,tview,surfGMC,2,sflaw,radfb); /*!part of all SF surviving the cruel cradle effect*/ 
 
   /*!CALCULATE CFE*/
-  cfearray = {fbound*fcce,fbound,fcce,fcce2}; /*!array containing the cluster formation efficiency, fbound, fcce, and fcce2 (i.e. fcce with respect to all SF)*/ 
-  return cfearray;
+  cfearray[0] = fbound*fcce;
+  cfearray[1] = fbound;
+  cfearray[2] = fcce;
+  cfearray[3] = fcce2; /*!array containing the cluster formation efficiency, fbound, fcce, and fcce2 (i.e. fcce with respect to all SF)*/ 
+  return cfearray[1];
 }
